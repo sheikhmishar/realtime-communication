@@ -1,0 +1,39 @@
+{
+  "name": "realtime-communication",
+  "version": "1.0.0",
+  "description": "A simple web browser based real time chat application",
+  "keywords": [
+    "chat",
+    "realtime",
+    "simple",
+    "application",
+    "node"
+  ],
+  "author": {
+    "name": "sheikhmishar",
+    "email": "misharex.sezan@gmail.com"
+  },
+  "homepage": "https://github.com/sheikhmishar/realtime-communication",
+  "bugs": {
+    "url": "https://github.com/sheikhmishar/realtime-communication/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sheikhmishar/realtime-communication.git"
+  },
+  "license": "MIT",
+  "main": "server.js",
+  "scripts": {
+    "test": "mocha test.js",
+    "watch": "nodemon -i views",
+    "watch:debug": "nodemon -e js,json -x \"node --inspect-brk server.js\""
+  },
+  "engines": {
+    "node": "v12.16.1",
+    "npm": "6.13.4"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  }
+}
