@@ -17,4 +17,4 @@ npm i && npm start
 ```
 2. Open http://localhost:5000 in browser
 
-### A demo has been deployed at http://localhost-tunnel.herokuapp.com/
+### A demo has been deployed at https://realtime-communication.herokuapp.com/
