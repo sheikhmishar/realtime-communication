@@ -1,8 +1,8 @@
 :root {
   --color-primary: #26c6da;
   --color-secondary: #00acc1;
-  --color-dark: #212121;
-  --text-primary: #fafafa;
+  --color-dark: #333;
+  --text-primary: #1f1f1f;
 }
 
 @font-face {
@@ -28,6 +28,18 @@ body {
 
 .text-primary {
   color: var(--text-primary) !important;
+}
+
+.btn {
+  min-width: 7rem;
+}
+
+#message-container {
+  overflow-y: auto;
+}
+
+.text-time {
+  width: 6rem;
 }
 
 ::-webkit-scrollbar {

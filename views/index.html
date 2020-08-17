@@ -10,10 +10,30 @@
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 
-<body class="bg-primary text-primary">
+<body class="text-primary">
   <nav>
   </nav>
   <main>
+    <div class="container py-2 d-flex flex-column vh-100">
+      <form id="connect-form" class="my-4">
+        <div class="input-group">
+          <input type="text" id="username-input" class="form-control" placeholder="Username">
+          <div class="input-group-append">
+            <button class="btn btn-dark" type="submit" id="connect-button">Connect</button>
+          </div>
+        </div>
+      </form>
+      <div id="message-container" class="flex-grow-1">
+      </div>
+      <form id="message-form" class="my-4">
+        <div class="input-group">
+          <input type="text" id="message-input" class="form-control" placeholder="Message">
+          <div class="input-group-append">
+            <button class="btn btn-dark" type="submit" id="send-button">Send</button>
+          </div>
+        </div>
+      </form>
+    </div>
   </main>
   <script defer src="./sock/socket.io.js"></script>
   <script defer src="./js/script.js"></script>
