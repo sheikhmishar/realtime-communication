@@ -6,6 +6,12 @@ const {
   findClientSocketByUsername
 } = require('../models/ClientSocket')
 
+/** @typedef {SocketIO.Socket & {username:String}} Socket */
+
+/**
+ * @param {Socket} socket
+ * @param {String} username
+ */
 const establishSocket = (socket, username) => {
   if (findClientSocketByUsername(username))
     return socket.emit('validate', false)
@@ -18,6 +24,7 @@ const establishSocket = (socket, username) => {
   log(`Joined ${socket.id} ${username} Total users: ${clientSocketCount}`)
 }
 
+/** @param {Socket} socket */
 const destroySocket = socket => {
   if (!socket.username) return
 
@@ -29,16 +36,22 @@ const destroySocket = socket => {
   log(`Left ${socket.id} ${socket.username} Total users: ${socketCount}`)
 }
 
+/** @param {Socket} socket */
 const handleNewSocketConnection = socket => {
   socket.on('username', username => establishSocket(socket, username))
   socket.on('disconnect', () => destroySocket(socket))
   socket.on('message', message => socket.broadcast.emit('message', message))
 }
 
+/** @param {Socket} socket */
 const onWatchSocketConnection = socket => log('visited', socket.client.id)
 
+/**
+ * @param {SocketIO.Server} io
+ * @param {import("fs").PathLike} viewsDir
+ */
 const setupSocket = (io, viewsDir) => {
-  io.of('/tunnel').on('connection', handleNewSocketConnection)
+  io.of('/chat').on('connection', handleNewSocketConnection)
 
   if (process.env.NODE_ENV !== 'production') {
     io.of('/watch').on('connection', onWatchSocketConnection)

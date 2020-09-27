@@ -7,9 +7,11 @@ const usernameInput = document.getElementById('username-input'),
   sendButton = document.getElementById('send-button')
 
 // State variables
+let usernameInputValue = ''
 
 // Server variables and constants
 const serverURL = location.host
+/** @type {SocketIOClient.Socket} */
 let socket
 
 // Helper functions
@@ -27,8 +29,11 @@ const uiOnDisconnect = () => {
   connectButton.innerText = 'Connect'
 }
 
+/** @param {{ text: String; username: String; }} message */
 const appendMessage = message => {
-  const isSelf = message.username && message.username === usernameInput.value
+  const { text, username } = message
+
+  const isSelf = username && username === usernameInputValue
 
   const flexDiv = document.createElement('div'),
     usernameSpan = document.createElement('span'),
@@ -36,7 +41,7 @@ const appendMessage = message => {
     timeSpan = document.createElement('span'),
     timeMarginClass = isSelf ? 'ml-2' : 'ml-auto',
     messageMarginClass = isSelf ? 'ml-auto' : '',
-    usernameClass = /(joined)|(left)|(error.*)/i.test(message.text)
+    usernameClass = /(joined)|(left)|(error.*)/i.test(text)
       ? 'text-dark'
       : 'badge badge-primary'
 
@@ -45,9 +50,9 @@ const appendMessage = message => {
   timeSpan.setAttribute('class', `text-dark text-time ${timeMarginClass}`)
   messageSpan.setAttribute('class', `text-dark mx-2 ${messageMarginClass}`)
 
-  usernameSpan.innerText = isSelf ? 'Me' : message.username
-  messageSpan.innerText = message.text
-  timeSpan.innerText = message.time
+  usernameSpan.innerText = isSelf ? 'Me' : username
+  messageSpan.innerText = text
+  timeSpan.innerText = new Date().toLocaleTimeString()
 
   flexDiv.appendChild(usernameSpan)
   if (isSelf) flexDiv.prepend(messageSpan)
@@ -58,36 +63,56 @@ const appendMessage = message => {
   messageContainer.scrollTop = messageContainer.scrollHeight
 }
 
-const intitiateConnection = () => {
-  socket = io.connect('ws://' + serverURL + '/tunnel', { path: '/sock' })
-  socket.on('connect', () => socket.emit('username', usernameInput.value))
-  socket.on('message', appendMessage)
-  socket.on('join', username =>
-    appendMessage({
-      time: new Date().toLocaleTimeString(),
-      text: 'joined',
-      username
-    })
-  )
-  socket.on('leave', username =>
-    appendMessage({
-      time: new Date().toLocaleTimeString(),
-      text: 'left',
-      username
-    })
-  )
-}
-
 const destroyConnection = () => {
   socket.removeAllListeners()
-  socket.disconnect(true)
+  socket.disconnect()
   socket = null
 
-  uiOnDisconnect()
+  return socket
 }
 
-const inputHasErrors = () => {
-  const username = usernameInput.value
+/** @param {String} username */
+const socketOnJoin = username =>
+  appendMessage({
+    text: 'joined',
+    username
+  })
+
+/** @param {String} username */
+const socketOnLeave = username =>
+  appendMessage({
+    text: 'left',
+    username
+  })
+
+/** @param {Boolean} isValidUsername */
+const socketOnValidate = isValidUsername => {
+  if (!isValidUsername) {
+    appendMessage({
+      text: 'Error: Duplicate Username',
+      username: ''
+    })
+    uiOnDisconnect()
+    return destroyConnection()
+  }
+  uiOnConnect()
+}
+
+/** @typedef {() => SocketIOClient.Socket} intitiateConnection */
+/** @type {intitiateConnection} */
+const intitiateConnection = () => {
+  socket = io.connect('ws://' + serverURL + '/chat', { path: '/sock' })
+  socket.on('connect', () => socket.emit('username', usernameInputValue))
+  socket.on('message', appendMessage)
+  socket.on('join', socketOnJoin)
+  socket.on('leave', socketOnLeave)
+  socket.on('validate', socketOnValidate)
+  return socket
+}
+
+/** @typedef {(username: string) => false | String} inputHasErrors */
+/** @type {inputHasErrors} */
+const inputHasErrors = username => {
   if (username.length <= 0) return 'Username length must be at least 1'
   else if (username.includes('/')) return 'Username cannot have /'
   else if (username.includes('.')) return 'Username cannot have .'
@@ -97,40 +122,30 @@ const inputHasErrors = () => {
   return false
 }
 
+/** @param {Event} event */
 const handleConnectButtonClick = event => {
   event.preventDefault()
 
-  if (socket) return destroyConnection()
+  if (socket) {
+    uiOnDisconnect()
+    return destroyConnection()
+  }
 
-  const inputError = inputHasErrors()
+  const inputError = inputHasErrors(usernameInputValue)
   if (inputError)
     appendMessage({
-      time: new Date().toLocaleTimeString(),
       text: `Error: ${inputError}`,
       username: ''
     })
-  if (!inputError) {
-    intitiateConnection()
-    socket.on('validate', isValidUsername => {
-      if (!isValidUsername) {
-        appendMessage({
-          time: new Date().toLocaleTimeString(),
-          text: 'Error: Duplicate Username',
-          username: ''
-        })
-        return destroyConnection()
-      }
-      uiOnConnect()
-    })
-  }
+  else intitiateConnection()
 }
 
-const onMessageFormSubmit = event => {
+/** @param {Event} event */
+const handleMessageFormSubmit = event => {
   event.preventDefault()
 
   const message = {
-    time: new Date().toLocaleTimeString(),
-    username: usernameInput.value,
+    username: usernameInputValue,
     text: messageInput.value || 'blank message'
   }
   socket.emit('message', message)
@@ -141,8 +156,12 @@ const onMessageFormSubmit = event => {
 // main
 window.addEventListener('load', () => {
   uiOnDisconnect()
-  messageForm.addEventListener('submit', onMessageFormSubmit)
+  messageForm.addEventListener('submit', handleMessageFormSubmit)
   connectButton.addEventListener('click', handleConnectButtonClick)
+  usernameInput.addEventListener(
+    'change',
+    () => (usernameInputValue = usernameInput.value)
+  )
 
   if (location.hostname === 'localhost')
     io.connect('ws://' + serverURL + '/watch', { path: '/sock' }).on(
@@ -153,3 +172,5 @@ window.addEventListener('load', () => {
         }, 500)
     )
 })
+
+if (typeof module !== 'undefined') module.exports = { inputHasErrors }
